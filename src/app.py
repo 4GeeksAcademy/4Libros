@@ -10,6 +10,9 @@ from api.models import db
 from api.routes import api
 from api.admin import setup_admin
 from api.commands import setup_commands
+from flask_cors import CORS
+
+from flask_mail import Mail, Message
 
 # from models import Person
 
@@ -42,6 +45,16 @@ app.register_blueprint(api, url_prefix='/api')
 
 # Handle/serialize errors like a JSON object
 
+# Configuracion mail
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 465
+app.config['MAIL_USE_SSL'] = True
+app.config['MAIL_USERNAME'] = '4libros.app@gmail.com'
+app.config['MAIL_PASSWORD'] = 'ugcv xvlr optv ewhg'
+
+CORS(app)
+
+mail = Mail(app)
 
 @app.errorhandler(APIException)
 def handle_invalid_usage(error):
@@ -64,6 +77,18 @@ def serve_any_other_file(path):
     response = send_from_directory(static_file_dir, path)
     response.cache_control.max_age = 0  # avoid cache memory
     return response
+
+@app.route('/email-prueba', methods=['POST'])
+def email_prueba():
+    recipient = request.json.get('recipient', None)
+    print('RECIPIENT')
+    print(recipient)
+
+    msg = Message(subject="Email de prueba", sender='4libros.app@gmail.com', recipients=[recipient])
+    msg.body = 'Hola esto es una prueba'
+    mail.send(msg)
+
+    return jsonify({ "mensaje": 'Email sent successfully!'}), 200
 
 
 # this only runs if `$ python src/main.py` is executed

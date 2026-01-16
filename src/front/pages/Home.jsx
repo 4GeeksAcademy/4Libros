@@ -1,11 +1,11 @@
-import React, { useEffect } from "react"
+import React, { useEffect, useState } from "react"
 import rigoImageUrl from "../assets/img/rigo-baby.jpg";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 import Card from "../components/Card.jsx";
 
 export const Home = () => {
-
 	const { store, dispatch } = useGlobalReducer()
+	const [correoElectronico, setCorreoElectronico] = useState("")
 
 	const loadMessage = async () => {
 		try {
@@ -33,23 +33,28 @@ export const Home = () => {
 		loadMessage()
 	}, [])
 
+	function enviarCorreo() {
+		fetch(`${import.meta.env.VITE_BACKEND_URL}/email-prueba`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ recipient: correoElectronico })
+		})
+		.then(resp => resp.json())
+		.then(data => {
+			console.log(data)
+		})
+		.catch(error => {
+			console.log(error)
+		}) 
+	}
+
 	return (
 		<div className="text-center mt-5">
 			<h1 className="display-4">Hello Rigo!!</h1>
-			<p className="lead">
-				<img src={rigoImageUrl} className="img-fluid rounded-circle mb-3" alt="Rigo Baby" />
-			</p>
-			<div className="alert alert-info">
-				{store.message ? (
-					<span>{store.message}</span>
-				) : (
-					<span className="text-danger">
-						Loading message from the backend (make sure your python 🐍 backend is running)...
-					</span>
-				)}
-			</div>
-
-			<Card />
+			<input type="text" onChange={(e) => setCorreoElectronico(e.target.value)} />
+			<button onClick={enviarCorreo}>
+				Enviar correo electrónico
+			</button>
 		</div>
 	);
 }; 
