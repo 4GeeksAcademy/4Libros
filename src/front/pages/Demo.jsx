@@ -1,13 +1,23 @@
 // Import necessary components from react-router-dom and other parts of the application.
 import { Link } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";  // Custom hook for accessing the global state.
+import { useEffect, useState } from "react";
 
 export const Demo = () => {
   // Access the global state and dispatch function using the useGlobalReducer hook.
   const { store, dispatch } = useGlobalReducer()
+  const [miToken, setMiToken] = useState()
+
+  useEffect(() => {
+    const token = localStorage.getItem('token4libros')
+    if (token) {
+      setMiToken(token)
+    }
+  }, [])
 
   return (
     <div className="container">
+      <h1>{miToken}</h1>
       <ul className="list-group">
         {/* Map over the 'todos' array from the store and render each item as a list element */}
         {store && store.todos?.map((item) => {

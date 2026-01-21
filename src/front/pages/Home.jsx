@@ -6,6 +6,9 @@ import Card from "../components/Card.jsx";
 export const Home = () => {
 	const { store, dispatch } = useGlobalReducer()
 	const [correoElectronico, setCorreoElectronico] = useState("")
+	const [contraseña, setContraseña] = useState("")
+	
+	const [ojito, setOjito] = useState('password')
 
 	const loadMessage = async () => {
 		try {
@@ -33,28 +36,37 @@ export const Home = () => {
 		loadMessage()
 	}, [])
 
-	function enviarCorreo() {
-		fetch(`${import.meta.env.VITE_BACKEND_URL}/email-prueba`, {
+	function iniciarSesion() {
+		fetch(`${import.meta.env.VITE_BACKEND_URL}/token`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ recipient: correoElectronico })
+			body: JSON.stringify({ email: correoElectronico, password: contraseña })
 		})
-		.then(resp => resp.json())
-		.then(data => {
-			console.log(data)
-		})
-		.catch(error => {
-			console.log(error)
-		}) 
+			.then(resp => resp.json())
+			.then(data => {
+				if (data && data.token) {
+					localStorage.setItem('token4libros', data.token)
+				}
+				else alert('Este usuario no existe')
+			})
+			.catch(error => {
+				alert('Este usuario no existe')
+				console.log(error)
+			})
 	}
 
 	return (
 		<div className="text-center mt-5">
-			<h1 className="display-4">Hello Rigo!!</h1>
+			<h1 className="display-4">Iniciar sesión</h1>
 			<input type="text" onChange={(e) => setCorreoElectronico(e.target.value)} />
-			<button onClick={enviarCorreo}>
-				Enviar correo electrónico
+			<input type="password" onChange={(e) => setContraseña(e.target.value)} />
+			<button onClick={iniciarSesion}>
+				Iniciar sesión
 			</button>
+
+			<a href="/olvide">
+				Olvidé mi contraseña
+			</a>
 		</div>
 	);
 }; 

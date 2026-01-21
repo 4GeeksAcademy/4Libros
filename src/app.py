@@ -6,11 +6,12 @@ from flask import Flask, request, jsonify, url_for, send_from_directory
 from flask_migrate import Migrate
 from flask_swagger import swagger
 from api.utils import APIException, generate_sitemap
-from api.models import db
+from api.models import db, User
 from api.routes import api
 from api.admin import setup_admin
 from api.commands import setup_commands
 from flask_cors import CORS
+from flask_jwt_extended import JWTManager, create_access_token, get_jwt_identity, jwt_required
 
 from flask_mail import Mail, Message
 
@@ -56,6 +57,9 @@ CORS(app)
 
 mail = Mail(app)
 
+app.config["JWT_SECRET_KEY"] = "MiClaveSecretaDe@dministr@dor!"
+jwt = JWTManager(app)
+
 @app.errorhandler(APIException)
 def handle_invalid_usage(error):
     return jsonify(error.to_dict()), error.status_code
@@ -78,17 +82,50 @@ def serve_any_other_file(path):
     response.cache_control.max_age = 0  # avoid cache memory
     return response
 
-@app.route('/email-prueba', methods=['POST'])
-def email_prueba():
-    recipient = request.json.get('recipient', None)
-    print('RECIPIENT')
-    print(recipient)
+@app.route('/reset-password', methods=['POST'])
+def reset_password():
+    email = request.json.get('email', None)
 
-    msg = Message(subject="Email de prueba", sender='4libros.app@gmail.com', recipients=[recipient])
-    msg.body = 'Hola esto es una prueba'
+    token = create_access_token(identity=email)
+
+    msg = Message(subject="Restaura tu contraseña", sender='4libros.app@gmail.com', recipients=[email])
+    msg.body = 'Dale click a este link para resetar tu contraseña ' + os.getenv("VITE_FRONTEND_URL") + '/resetear?token=' + token
     mail.send(msg)
 
-    return jsonify({ "mensaje": 'Email sent successfully!'}), 200
+    return jsonify({ "success": True }), 200
+
+@app.route('/change-password', methods=['POST'])
+@jwt_required()
+def change_password():
+    password = request.json.get("password", None)
+    email = get_jwt_identity()
+
+    user = User.query.filter_by(email=email).first()
+    if user is None:
+        # The user was not found on the database
+        return jsonify({"msg": "Usuario not found"}), 401
+
+    user.password = password
+    db.session.add(user)
+    db.session.commit()
+
+    return jsonify({ "success": True }), 200
+
+@app.route("/token", methods=["POST"])
+def create_token():
+    email = request.json.get("email", None)
+    password = request.json.get("password", None)
+
+    # Query your database for username and password
+    user = User.query.filter_by(email=email, password=password).first()
+
+    if user is None:
+        # The user was not found on the database
+        return jsonify({"msg": "Bad username or password"}), 401
+    
+    # Create a new token with the user id inside
+    access_token = create_access_token(identity=user.id)
+    return jsonify({ "token": access_token, "user_id": user.id }), 200
 
 
 # this only runs if `$ python src/main.py` is executed
